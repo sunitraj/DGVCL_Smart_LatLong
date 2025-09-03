@@ -1,0 +1,51 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Smart Meter Survey Redirect</title>
+  <script>
+    function redirectToForm(lat, long) {
+      // Use GeoPlugin API to get address from lat/long
+      const geoPluginURL = `https://www.geoplugin.net/extras/location.gp?lat=${lat}&long=${long}&format=json`;
+
+      fetch(geoPluginURL)
+        .then(response => response.json())
+        .then(data => {
+          const address = data.geoplugin_place || "Unknown Location";
+
+          // Construct the Google Form URL with pre-filled entries
+          const formBaseURL = "https://docs.google.com/forms/d/e/1FAIpQLSeZzETgAvpL5lYJG_6kiYH3wh7r6t1x55epHtCbtjQ6ZkZSsQ/viewform";
+          const latField = "entry.2005620554";
+          const longField = "entry.1064028044";
+          const addressField = "entry.394533439";
+
+          const formURL = `${formBaseURL}?${latField}=${lat}&${longField}=${long}&${addressField}=${encodeURIComponent(address)}`;
+          window.location.href = formURL;
+        })
+        .catch(error => {
+          alert("Unable to fetch address from GeoPlugin.");
+          console.error(error);
+        });
+    }
+
+    function getLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+          const lat = position.coords.latitude;
+          const long = position.coords.longitude;
+          redirectToForm(lat, long);
+        }, function(error) {
+          alert("Location access denied or unavailable.");
+        });
+      } else {
+        alert("Geolocation is not supported by this browser.");
+      }
+    }
+
+    window.onload = getLocation;
+  </script>
+</head>
+<body>
+  <p>Redirecting to form with location and address...</p>
+</body>
+</html>
