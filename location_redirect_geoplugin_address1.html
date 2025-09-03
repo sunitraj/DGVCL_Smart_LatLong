@@ -1,0 +1,72 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Smart Meter Survey Redirect</title>
+  <script>
+    async function getAddressFromGeoPlugin(lat, lon) {
+      try {
+        const response = await fetch(`https://www.geoplugin.net/extras/location.gp?lat=${lat}&long=${lon}`, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0'
+          }
+        });
+        const text = await response.text();
+
+        // Try to extract address from known fields
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(text, 'text/html');
+        const table = doc.querySelector('table');
+        if (!table) throw new Error("No address table found");
+
+        let address = "";
+        const rows = table.querySelectorAll('tr');
+        rows.forEach(row => {
+          const label = row.querySelector('td:nth-child(1)');
+          const value = row.querySelector('td:nth-child(2)');
+          if (label && value) {
+            const key = label.textContent.trim().toLowerCase();
+            if (["city", "region", "country", "suburb", "street"].includes(key)) {
+              address += value.textContent.trim() + ", ";
+            }
+          }
+        });
+
+        return address.replace(/,\s*$/, ""); // Remove trailing comma
+      } catch (error) {
+        console.error("GeoPlugin address fetch failed:", error);
+        return "Address unavailable";
+      }
+    }
+
+    async function redirectToForm(lat, lon) {
+      const address = await getAddressFromGeoPlugin(lat, lon);
+      const formBaseURL = "https://docs.google.com/forms/d/e/1FAIpQLSeZzETgAvpL5lYJG_6kiYH3wh7r6t1x55epHtCbtjQ6ZkZSsQ/viewform";
+      const latField = "entry.2005620554";
+      const lonField = "entry.1064028044";
+      const addressField = "entry.394533439";
+      const formURL = `${formBaseURL}?${latField}=${encodeURIComponent(lat)}&${lonField}=${encodeURIComponent(lon)}&${addressField}=${encodeURIComponent(address)}`;
+      window.location.href = formURL;
+    }
+
+    function getLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          redirectToForm(lat, lon);
+        }, function(error) {
+          alert("Location access denied or unavailable.");
+        });
+      } else {
+        alert("Geolocation is not supported by this browser.");
+      }
+    }
+
+    window.onload = getLocation;
+  </script>
+</head>
+<body>
+  <p>Redirecting to form with location and address...</p>
+</body>
+</html>
