@@ -1,0 +1,72 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Location Verification</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    #map { height: 300px; width: 100%; margin-top: 10px; }
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    #info { margin-top: 10px; }
+    button { margin-top: 15px; padding: 10px 20px; font-size: 16px; }
+  </style>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+</head>
+<body>
+  <h2>Verify Your Location</h2>
+  <div id="map"></div>
+  <div id="info">Fetching location...</div>
+  <button id="proceedBtn" disabled>Verify & Proceed</button>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    let lat, lon, address;
+
+    function initMap(latitude, longitude) {
+      const map = L.map('map').setView([latitude, longitude], 15);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
+      L.marker([latitude, longitude]).addTo(map)
+        .bindPopup("You are here").openPopup();
+    }
+
+    function reverseGeocode(lat, lon) {
+      fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+        .then(response => response.json())
+        .then(data => {
+          address = data.display_name;
+          document.getElementById("info").innerHTML = 
+            `<strong>Latitude:</strong> ${lat}<br>
+             <strong>Longitude:</strong> ${lon}<br>
+             <strong>Address:</strong> ${address}`;
+          document.getElementById("proceedBtn").disabled = false;
+        })
+        .catch(() => {
+          document.getElementById("info").innerText = "Unable to retrieve address.";
+        });
+    }
+
+    function redirectToForm() {
+      const formURL = "https://docs.google.com/forms/d/e/1FAIpQLSdDyFi5gTkJDXKUtMoD_uQH0VtBONIzSLuNbSaNleQRSIcqNA/viewform";
+      const params = new URLSearchParams({
+        "entry.1234567890": lat,
+        "entry.0987654321": lon,
+        "entry.1122334455": address
+      });
+      window.location.href = `${formURL}?${params.toString()}`;
+    }
+
+    document.getElementById("proceedBtn").addEventListener("click", redirectToForm);
+
+    navigator.geolocation.getCurrentPosition(position => {
+      lat = position.coords.latitude;
+      lon = position.coords.longitude;
+      initMap(lat, lon);
+      reverseGeocode(lat, lon);
+    }, () => {
+      document.getElementById("info").innerText = "Location access denied.";
+    });
+  </script>
+</body>
+</html>
