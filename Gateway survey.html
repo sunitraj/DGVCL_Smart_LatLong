@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Gateway Survey with Location and Address</title>
+  <script>
+    async function getAddressFromCoordinates(lat, lon) {
+      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
+      try {
+        const response = await fetch(url, {
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+        const data = await response.json();
+        return data.display_name || "Unknown address";
+      } catch (error) {
+        console.error("Error fetching address:", error);
+        return "Address lookup failed";
+      }
+    }
+
+    async function redirectToForm(lat, lon) {
+      const address = await getAddressFromCoordinates(lat, lon);
+      const formBaseURL = "https://docs.google.com/forms/d/e/1FAIpQLSfQoOuYQg082GD5pCyuUMsFV4eSjf3z_RfDW3Npc7yFkK29Bw/viewform";
+      const latField = "entry.1355707769";
+      const lonField = "entry.811589956";
+      const addressField = "entry.1957987817";
+      const formURL = `${formBaseURL}?${latField}=${encodeURIComponent(lat)}&${lonField}=${encodeURIComponent(lon)}&${addressField}=${encodeURIComponent(address)}`;
+      window.location.href = formURL;
+    }
+
+    function getLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          redirectToForm(lat, lon);
+        }, function(error) {
+          alert("Location access denied or unavailable.");
+        });
+      } else {
+        alert("Geolocation is not supported by this browser.");
+      }
+    }
+
+    window.onload = getLocation;
+  </script>
+</head>
+<body>
+  <p>Capturing location and redirecting to form...</p>
+</body>
+</html>
